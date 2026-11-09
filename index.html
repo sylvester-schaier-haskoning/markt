@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Marktkaart RO&I Zuid-West</title>
+    <style>
+      * { box-sizing: border-box; }
+
+      html, body {
+        padding: 0; margin: 0;
+        height: 100%; width: 100%;
+        display: flex; flex-direction: column;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+      }
+
+      /* ── HEADER ── */
+      #app-header {
+        background-color: #1a2b45;
+        color: white;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        height: 48px;
+        flex-shrink: 0;
+        z-index: 200;
+      }
+
+      #project-title {
+        font-size: 20px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.9);
+      }
+
+      /* ── MIDDLE ROW ── */
+      #app-body {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      /* ── SIDEBAR ── */
+      #sidebar {
+        display: flex;
+        flex-direction: row;
+        flex-shrink: 0;
+        transition: width 0.25s ease;
+        overflow: hidden;
+        width: 60px;
+        z-index: 100;
+        border-right: 1px solid #cdd5dd;
+      }
+
+      #sidebar.open { width: 320px; }
+
+      #sidebar-buttons {
+        width: 60px;
+        min-width: 60px;
+        background: #1a2b45;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 8px;
+        gap: 10px;
+      }
+
+      .sb-btn {
+        width: 32px;
+        height: 36px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 12px;
+        padding: 3px 2px;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .sb-btn:hover { background: rgba(255,255,255,0.12); color: white; }
+      .sb-btn.active { background: rgba(255,255,255,0.2); color: white; }
+
+      .sb-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+        gap: 10px;
+      }
+
+      #sidebar-panel {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        min-width: 0;
+      }
+
+      #panel-header {
+        background: #e8edf2;
+        padding: 8px 10px 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1a2b45;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #cdd5dd;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      #panel-close {
+        background: none; border: none;
+        cursor: pointer; color: #888;
+        font-size: 14px; padding: 0 2px;
+        line-height: 1; flex-shrink: 0;
+      }
+      #panel-close:hover { color: #1a2b45; }
+
+      #panel-content {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+      }
+
+      .widget-slot {
+        display: none;
+        position: absolute;
+        inset: 0;
+      }
+      .widget-slot.visible { display: block; }
+
+      .widget-slot arcgis-layer-list,
+      .widget-slot arcgis-legend,
+      .widget-slot arcgis-editor {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* ── MAP COLUMN ── */
+      #map-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      calcite-list, calcite-button {
+        --calcite-color-text-1: #3c83b7;
+        --calcite-color-text-2: #3c83b7;
+        --calcite-color-text-3: #3c83b7;
+      }
+
+      arcgis-map {
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* ── TABLE PANEL ── */
+      #table-panel {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid #cdd5dd;
+        /* collapsed by default */
+        height: 30px;
+        transition: height 0.25s ease;
+        overflow: hidden;
+        background: white;
+      }
+
+      #table-panel.open {
+        height: 400px;
+      }
+
+      #table-header {
+        height: 40px;
+        min-height: 40px;
+        background: #1a2b45;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        cursor: pointer;
+        user-select: none;
+        flex-shrink: 0;
+      }
+
+      #table-header:hover {
+        background: #223655;
+      }
+
+      #table-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255,255,255,0.9);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      #table-header-left svg {
+        width: 14px; height: 14px;
+        fill: none;
+        stroke: rgba(255,255,255,0.8);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.25s ease;
+      }
+
+      #table-panel.open #table-header-left svg {
+        transform: rotate(180deg);
+      }
+
+      #table-header-right {
+        color: rgba(255,255,255,0.5);
+        font-size: 10px;
+      }
+
+      arcgis-feature-table {
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* ── FOOTER ── */
+      #app-footer {
+        background-color: #1a2b45;
+        color: rgba(255,255,255,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        height: 28px;
+        flex-shrink: 0;
+        font-size: 11px;
+        z-index: 200;
+      }
+
+      #feedback-btn {
+        background: none; border: none;
+        color: rgba(255,255,255,0.7);
+        cursor: pointer; font-size: 11px;
+        padding: 0; text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      #feedback-btn:hover { color: white; }
+
+      #footer-right { display: flex; align-items: center; gap: 14px; }
+
+      .footer-link {
+        color: rgba(255,255,255,0.7);
+        text-decoration: none; font-size: 11px;
+      }
+      .footer-link:hover { color: white; text-decoration: underline; }
+      .footer-sep { color: rgba(255,255,255,0.3); }
+      /* ═══════════ BEGIN PROJECTLOCATIE (CSS) ═══════════
+         Opmaak voor het paneel 'Projectlocatie'. Alles hieronder begint met
+         #slot-projectlocatie of .pl- zodat het de bestaande opmaak niet raakt. */
+      #slot-projectlocatie { overflow: auto; }              /* paneel kan scrollen */
+      #slot-projectlocatie .pl-wrap {
+        display: flex; flex-direction: column; gap: 10px;
+        padding: 10px 12px 16px 12px;
+        font-size: 12px; color: #1a2b45;
+      }
+      #slot-projectlocatie .pl-status { color: #5a6b7d; font-size: 11px; min-height: 14px; }
+      #slot-projectlocatie calcite-list { max-height: 240px; overflow: auto; border: 1px solid #e0e5ea; }
+      #slot-projectlocatie .pl-section-title {
+        font-weight: 600; font-size: 12px; margin: 4px 0 0 0;
+        border-top: 1px solid #e0e5ea; padding-top: 8px;
+      }
+      #slot-projectlocatie table.pl-attr { width: 100%; border-collapse: collapse; }
+      #slot-projectlocatie table.pl-attr td { padding: 2px 4px; vertical-align: top; border-bottom: 1px solid #f0f2f5; }
+      #slot-projectlocatie table.pl-attr td:first-child { color: #5a6b7d; width: 40%; }
+      #slot-projectlocatie .pl-row { display: flex; gap: 6px; }
+      #slot-projectlocatie .pl-row calcite-button { flex: 1; }
+      #slot-projectlocatie .pl-hint { color: #5a6b7d; font-size: 11px; line-height: 1.4; }
+      #slot-projectlocatie [hidden] { display: none !important; }
+      /* ═══════════ END PROJECTLOCATIE (CSS) ═══════════ */
+    </style>
+
+    <script type="module" src="https://js.arcgis.com/calcite-components/3.2.1/calcite.esm.js"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.33/"></script>
+    <script type="module" src="https://js.arcgis.com/4.33/map-components/"></script>
+
+    <script type="module">
+      const [esriConfig] = await $arcgis.import(["@arcgis/core/config.js"]);
+      esriConfig.portalUrl = "https://rhk.maps.arcgis.com/";
+      esriConfig.apiKey = "AAPTaP_6F-5zmtLsQOquAdNZBPA..OVQ_Ia2nJ2IPoKakElldwdj8WnHgXAOOJanP3tlTzLzBV4zShV93JuQIu0nbidnvbHZwEKjiPQI4LcitWU-DHme-cvIxaK37KSQ1XvpIxksgvR4bY3DW4_jf-CNPKAZt6BUI2Mxm3Tc-g-tiQ9kywxmxo5FLqs6_Cjv4G2_2y08JZCRT2SZJrQbzsyZZdEI8tzO7L9AhKqkbitl6aP9RJ2Mb9dA_imSdZnFmbl6y0zih9XcMN86w2yCp0Ywm8UdSQiJGi8g74nw.AT1_9yKLP118";
+    </script>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <header id="app-header">
+      <span id="project-title">BZ1137 - Markt viewer</span>
+    </header>
+
+    <!-- SIDEBAR + MAP -->
+    <div id="app-body">
+
+      <!-- SIDEBAR -->
+      <div id="sidebar">
+
+        <div id="sidebar-buttons">
+
+          <button class="sb-btn" id="btn-layers" title="Lagen"
+                  onclick="togglePanel('layers', 'Lagen', this)">
+            <svg viewBox="0 0 24 24">
+              <polygon points="12,2 22,8.5 12,15 2,8.5"/>
+              <polyline points="2,12 12,18.5 22,12"/>
+              <polyline points="2,16 12,22 22,16"/>
+            </svg>
+            Lagen
+          </button>
+
+          <button class="sb-btn" id="btn-legend" title="Legenda"
+                  onclick="togglePanel('legend', 'Legenda', this)">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="5" height="5" rx="1"/>
+              <line x1="11" y1="6.5" x2="21" y2="6.5"/>
+              <rect x="3" y="13" width="5" height="5" rx="1"/>
+              <line x1="11" y1="15.5" x2="21" y2="15.5"/>
+            </svg>
+            Legenda
+          </button>
+
+          <button class="sb-btn" id="btn-edit" title="Bewerken"
+                  onclick="togglePanel('edit', 'Bewerken', this)">
+            <svg viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Bewerken
+          </button>
+
+          <!-- ═══════════ BEGIN PROJECTLOCATIE (HTML knop) ═══════════ -->
+          <button class="sb-btn" id="btn-projectlocatie" title="Projectlocatie"
+                  onclick="togglePanel('projectlocatie', 'Projectlocatie', this)">
+            <!-- Icoon: kaartspeld met een stippellijn-gebied eromheen -->
+            <svg viewBox="0 0 24 24">
+              <path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/>
+              <circle cx="12" cy="11" r="2.2"/>
+            </svg>
+            Project
+          </button>
+          <!-- ═══════════ END PROJECTLOCATIE (HTML knop) ═══════════ -->
+
+        </div>
+
+        <div id="sidebar-panel">
+          <div id="panel-header">
+            <span id="panel-title"></span>
+            <button id="panel-close" onclick="closePanel()" title="Sluiten">✕</button>
+          </div>
+          <div id="panel-content">
+            <div class="widget-slot" id="slot-layers">
+              <arcgis-layer-list reference-element="arcgis-map"></arcgis-layer-list>
+            </div>
+            <div class="widget-slot" id="slot-legend">
+              <arcgis-legend reference-element="arcgis-map"></arcgis-legend>
+            </div>
+            <div class="widget-slot" id="slot-edit">
+              <arcgis-editor reference-element="arcgis-map"></arcgis-editor>
+            </div>
+            <!-- ═══════════ BEGIN PROJECTLOCATIE (HTML paneel) ═══════════ -->
+            <div class="widget-slot" id="slot-projectlocatie">
+              <div class="pl-wrap">
+
+                <!-- Meldingen (fout / waarschuwing / gelukt) -->
+                <calcite-notice id="pl-notice" closable icon scale="s" width="full">
+                  <div slot="title" id="pl-notice-title"></div>
+                  <div slot="message" id="pl-notice-message"></div>
+                </calcite-notice>
+
+                <!-- 1. Zoeken -->
+                <calcite-label scale="s">
+                  Zoek op projectnummer
+                  <calcite-input id="pl-search" type="search" icon="search" clearable
+                                 scale="s" placeholder="Typ (een deel van) het projectnummer"
+                                 max-length="50" disabled></calcite-input>
+                </calcite-label>
+
+                <calcite-label layout="inline" scale="s">
+                  <calcite-checkbox id="pl-only-placeholder" scale="s" disabled></calcite-checkbox>
+                  Alleen projecten zonder locatie
+                </calcite-label>
+
+                <div id="pl-status" class="pl-status">Laag wordt geladen…</div>
+
+                <calcite-list id="pl-results" label="Zoekresultaten"
+                              selection-mode="single-persist" selection-appearance="highlight"
+                              scale="s"></calcite-list>
+
+                <!-- 2. Geselecteerd project + tekenen -->
+                <div id="pl-details" hidden>
+                  <div class="pl-section-title">Geselecteerd project</div>
+                  <table class="pl-attr" id="pl-attr-table"></table>
+                </div>
+
+                <div id="pl-draw-section" hidden>
+                  <div class="pl-section-title">Projectgebied tekenen</div>
+                  <div class="pl-hint">
+                    Ga eerst zelf naar de juiste plek op de kaart (zoomen/verschuiven).
+                    Klik op <b>Teken projectgebied</b>, klik dan op de kaart om punten te zetten
+                    en <b>dubbelklik</b> om het vlak af te ronden. Daarna kunt u de punten nog verslepen.
+                  </div>
+                  <calcite-button id="pl-draw" icon-start="polygon" width="full" scale="s">
+                    Teken projectgebied
+                  </calcite-button>
+                  <div class="pl-row" style="margin-top:6px">
+                    <calcite-button id="pl-undo" icon-start="undo" appearance="outline" scale="s" disabled>
+                      Ongedaan maken
+                    </calcite-button>
+                    <calcite-button id="pl-redo" icon-start="redo" appearance="outline" scale="s" disabled>
+                      Opnieuw
+                    </calcite-button>
+                  </div>
+                  <div class="pl-row" style="margin-top:6px">
+                    <calcite-button id="pl-save" icon-start="save" scale="s" disabled>Opslaan</calcite-button>
+                    <calcite-button id="pl-cancel" icon-start="x" kind="neutral" appearance="outline" scale="s" disabled>
+                      Annuleren
+                    </calcite-button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <!-- ═══════════ END PROJECTLOCATIE (HTML paneel) ═══════════ -->
+          </div>
+        </div>
+
+      </div><!-- /sidebar -->
+
+      <!-- MAP + TABLE -->
+      <div id="map-column">
+
+        <arcgis-map item-id="c222a775af5a42cab74b9abcd046dcb8">
+        </arcgis-map>
+
+        <!-- COLLAPSIBLE TABLE -->
+        <div id="table-panel">
+          <div id="table-header" onclick="toggleTable()">
+            <div id="table-header-left">
+              <!-- Chevron up/down -->
+              <svg viewBox="0 0 24 24" id="table-chevron">
+                <polyline points="18,15 12,9 6,15"/>
+              </svg>
+              Attribuuttabel
+            </div>
+            <div id="table-header-right">Klik om te openen</div>
+          </div>
+          <arcgis-feature-table
+                editing-enabled
+                show-layer-dropdown
+                reference-element="arcgis-map"
+                description="maak een keuze hiernaast"
+                related-records-enabled>
+          </arcgis-feature-table>
+        </div>
+
+      </div><!-- /map-column -->
+
+    </div><!-- /app-body -->
+
+    <!-- FOOTER -->
+    <footer id="app-footer">
+      <div id="footer-left">
+        <button id="feedback-btn">Heeft u feedback?</button>
+      </div>
+      <div id="footer-right">
+        <a href="#" class="footer-link">Privacy statement</a>
+        <span class="footer-sep">|</span>
+        <a href="#" class="footer-link">Disclaimer</a>
+      </div>
+    </footer>
+
+    <script type="module">
+      /* ── Sidebar ── */
+      const sidebar    = document.getElementById("sidebar");
+      const panelTitle = document.getElementById("panel-title");
+      let activePanel  = null;
+
+      window.togglePanel = function(name, label, btn) {
+        if (activePanel === name) { closePanel(); return; }
+        activePanel = name;
+        sidebar.classList.add("open");
+        panelTitle.textContent = label;
+        document.querySelectorAll(".widget-slot").forEach(s => s.classList.remove("visible"));
+        document.getElementById("slot-" + name).classList.add("visible");
+        document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      };
+
+      window.closePanel = function() {
+        activePanel = null;
+        sidebar.classList.remove("open");
+        document.querySelectorAll(".widget-slot").forEach(s => s.classList.remove("visible"));
+        document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
+      };
+
+      /* ── Table ── */
+      const tablePanel  = document.getElementById("table-panel");
+      const tableHint   = document.getElementById("table-header-right");
+
+      window.toggleTable = function() {
+        const isOpen = tablePanel.classList.toggle("open");
+        tableHint.textContent = isOpen ? "Klik om te sluiten" : "Klik om te openen";
+      };
+
+      /* ── Map ready ── */
+      const mapEl   = document.querySelector("arcgis-map");
+      const tableEl = document.querySelector("arcgis-feature-table");
+
+      await mapEl.viewOnReady();
+
+      tableEl.tableTemplate = {
+        columnTemplates: [
+          { type: "field", fieldName: "statnaam",       label: "Naam" },
+          { type: "field", fieldName: "MT_Lid",         label: "MT-Lid" },
+          { type: "field", fieldName: "Accounthouder",  label: "Accounthouder" },
+          { type: "field", fieldName: "AG",             label: "AG" },
+          { type: "field", fieldName: "Prio",           label: "Prio" },
+          { type: "field", fieldName: "Accountplannen", label: "Accountplannen" },
+          { type: "field", fieldName: "ROVK",           label: "ROVK" },
+          { type: "field", fieldName: "in_AG",          label: "In-AG" },
+          { type: "field", fieldName: "CRE_link",       label: "CRM" }
+        ]
+      };
+    </script>
+    <!-- ═══════════ BEGIN PROJECTLOCATIE (JS) ═══════════
+         Paneel 'Projectlocatie': project zoeken, nieuw projectgebied tekenen
+         en ALLEEN de geometrie opslaan in de projectenlaag.
+         Alles wat u normaal hoeft aan te passen staat in het CONFIG-blok hieronder. -->
+    <script type="module">
+      /* ────────────────────────────── CONFIG ──────────────────────────────
+         Pas hier de instellingen aan. Tekst altijd tussen "aanhalingstekens". */
+      const CONFIG = {
+
+        // ── Welke laag? ──
+        // Titel van de projectenlaag precies zoals in de Lagen-lijst van de webkaart.
+        PROJECT_LAYER_TITLE: "Projectgrens",
+        // Optioneel: in plaats van de titel de laag-id uit de webkaart gebruiken.
+        // Laat leeg ("") om op titel te zoeken. Een ingevulde id gaat voor de titel.
+        // PROJECT_LAYER_ID: "fbf2f3e68e6d4faf8407477f3304946c",
+
+        // ── Velden ──
+        // Veld met het projectnummer (hierop wordt gezocht). INVULLEN!
+        PROJECT_NUMBER_FIELD: "Projectnummer",
+        // Veld met de projectnaam (wordt in de resultatenlijst getoond).
+        NAME_FIELD: "Naam",
+        // Ook op de naam zoeken? true = projectnummer OF naam, false = alleen projectnummer.
+        SEARCH_IN_NAME_TOO: false,
+        // Velden die bij het geselecteerde project worden getoond: [veldnaam, label].
+        // Velden die niet in de laag bestaan worden overgeslagen.
+        DETAIL_FIELDS: [
+          ["Naam",      "Naam"],
+          ["Projectnummer",      "Projectnummer"],
+          ["Projectleider",        "Projectleider"],
+          ["Opdrachtgever", "Opdrachtgever"],
+          ["Status_project",            "Status_project"],
+          ["Opmerking",          "Opmerking"]
+        ],
+
+        // ── Herkennen van projecten 'zonder locatie' (de tijdelijke cirkel) ──
+        // "where":    VOORKEUR als er een betrouwbaar veld is (bv. een status- of ja/nee-veld
+        //             dat aangeeft dat het project nog een placeholder is). Vul dan
+        //             PLACEHOLDER_WHERE in. Dat is exact en hangt niet af van de ligging.
+        // "distance": een project telt als 'zonder locatie' als het vlak binnen
+        //             PLACEHOLDER_TOLERANCE_METERS van PLACEHOLDER_CENTER ligt
+        //             (ruimtelijke query, de server rekent het uit).
+        //             LET OP, dit is een vuistregel: 'intersects' betekent dat het vlak het
+        //             gebied rond het middelpunt RAAKT. Een echt projectgebied dat over de
+        //             placeholder-plek heen getekend wordt (of er heel dichtbij ligt) telt dan
+        //             ook als 'zonder locatie'. Houd de tolerantie dus klein (straal + marge).
+        PLACEHOLDER_MODE: "distance",
+        // Middelpunt van de tijdelijke cirkel. NOG INVULLEN (x/y staan nu op null).
+        //   wkid 28992 = RD New (x ≈ 0–300000, y ≈ 300000–625000)
+        //   wkid 4326  = lengte-/breedtegraad (x = lengte bv. 3.5, y = breedte bv. 51.6)
+        //   wkid 3857  = Web Mercator (meters, zoals de meeste basiskaarten)
+        PLACEHOLDER_CENTER: { x: null, y: null, wkid: 28992 },
+        // Hoe ver (in meters) van het middelpunt nog als 'zonder locatie' telt.
+        // Neem iets ruimer dan de straal van de cirkel, bv. straal + 100 m.
+        PLACEHOLDER_TOLERANCE_METERS: 500,
+        // Alleen gebruikt als PLACEHOLDER_MODE = "where". Voorbeeld:
+        //   "locatie_status = 'placeholder'"   of   "Shape__Area BETWEEN 785000 AND 786000"
+        PLACEHOLDER_WHERE: "VOORWAARDE_INVULLEN",
+
+        // ── Zoeken ──
+        MAX_RESULTS: 50,          // maximaal aantal resultaten in de lijst
+        SEARCH_DELAY_MS: 300,     // wachttijd na typen voordat er gezocht wordt (debounce)
+        // Tekens  \  %  _  in de zoektekst letterlijk zoeken (met ESCAPE '\' in de SQL).
+        // Zonder dit werken % en _ als jokertekens. NOG CONTROLEREN op de echte laag:
+        // geeft zoeken op bv. "BZ_1" een foutmelding, zet dit dan op false.
+        ESCAPE_LIKE_WILDCARDS: true,
+        SEARCH_MAX_LENGTH: 50,    // maximaal aantal tekens in het zoekveld
+
+        // ── Kleuren van het getekende vlak ──  [rood, groen, blauw, doorzichtigheid 0–1]
+        SKETCH_FILL_COLOR:    [255, 140, 0, 0.25],
+        SKETCH_OUTLINE_COLOR: [255, 90, 0, 1],
+        SKETCH_OUTLINE_WIDTH: 2,
+
+        // ── Testen ──
+        // true = maakt window.__projectlocatie aan in de browserconsole (alleen voor testen).
+        DEBUG: false
+      };
+      /* BEVEILIGING (API-sleutel): iedereen die deze pagina opent kan de sleutel lezen.
+         Beperk daarom in ArcGIS Online (Developer credentials / API key):
+           - de toegestane verwijzers (referrers) tot de website waar deze pagina staat;
+           - de item-toegang tot alleen de webkaart en de benodigde lagen;
+         en laat de sleutel bij voorkeur bewerken via een aparte 'view' van de projectenlaag
+         waarop alleen 'Update' (geen Add/Delete) aan staat, met wijzigingen bijhouden aan. */
+      /* ──────────────────────────── EINDE CONFIG ──────────────────────────── */
+
+
+      /* ── Benodigde onderdelen van de ArcGIS Maps SDK laden ── */
+      const [SketchViewModel, GraphicsLayer, Graphic, Point, projectOperator] = await $arcgis.import([
+        "@arcgis/core/widgets/Sketch/SketchViewModel.js",
+        "@arcgis/core/layers/GraphicsLayer.js",
+        "@arcgis/core/Graphic.js",
+        "@arcgis/core/geometry/Point.js",
+        "@arcgis/core/geometry/operators/projectOperator.js"
+      ]);
+
+      /* ── Verwijzingen naar de elementen in het paneel ── */
+      const $ = (id) => document.getElementById(id);
+      const ui = {
+        notice: $("pl-notice"), noticeTitle: $("pl-notice-title"), noticeMsg: $("pl-notice-message"),
+        search: $("pl-search"), onlyPlaceholder: $("pl-only-placeholder"),
+        status: $("pl-status"), results: $("pl-results"),
+        details: $("pl-details"), attrTable: $("pl-attr-table"),
+        drawSection: $("pl-draw-section"),
+        draw: $("pl-draw"), undo: $("pl-undo"), redo: $("pl-redo"),
+        save: $("pl-save"), cancel: $("pl-cancel")
+      };
+
+      /* ── Toestand (wordt tijdens gebruik bijgewerkt) ── */
+      let projectLayer = null;       // de projectenlaag (FeatureLayer)
+      let layerView = null;          // nodig voor het oplichten (highlight)
+      let highlightHandle = null;
+      let numberField = null;        // echte veldnamen zoals ze in de laag staan
+      let nameField = null;
+      let oidField = null;           // het ObjectID-veld
+      let selected = null;           // het geselecteerde project (Graphic)
+      let placeholderIds = new Set();// objectIds van projecten 'zonder locatie'
+      let sketchVM = null;           // tekengereedschap
+      let sketchLayer = null;        // tijdelijke laag voor het getekende vlak
+      let drawnGraphic = null;       // het getekende vlak
+      let searchTimer = null;
+      let searchAbort = null;
+      let selectRequest = 0;         // teller: alleen het antwoord van de laatste selectie telt
+      let saving = false;            // true zolang er opgeslagen wordt (tegen dubbelklikken)
+
+      /* ── Meldingen tonen ── kind: "danger" (fout), "warning", "success", "brand" (info) */
+      function showMessage(kind, title, message) {
+        ui.notice.kind = kind;
+        ui.noticeTitle.textContent = title;
+        ui.noticeMsg.textContent = message || "";
+        ui.notice.open = true;
+      }
+      function hideMessage() { ui.notice.open = false; }
+
+      /* Zoek een veld in de laag zonder op hoofdletters te letten. Geeft het veld-object terug. */
+      function findField(name) {
+        if (!name) return null;
+        const lower = String(name).toLowerCase();
+        return projectLayer.fields.find(f => f.name.toLowerCase() === lower) || null;
+      }
+
+      /* Is bewerken mogelijk? Geeft een Nederlandse foutmelding terug, of null als het goed is. */
+      function editingProblem() {
+        if (!projectLayer) return "De projectenlaag is niet geladen.";
+        if (projectLayer.editingEnabled === false) {
+          return "Bewerken staat uit voor deze laag (in de webkaart of in de laaginstellingen in ArcGIS Online).";
+        }
+        const caps = projectLayer.capabilities;
+        if (!caps || !caps.operations || !caps.operations.supportsUpdate) {
+          return "Deze laag staat het bijwerken van objecten niet toe (Update staat uit bij de Feature Service), " +
+                 "of de API-sleutel heeft geen schrijfrechten op deze laag.";
+        }
+        if (caps.editing && caps.editing.supportsGeometryUpdate === false) {
+          return "Deze laag staat het wijzigen van de geometrie niet toe.";
+        }
+        return null;
+      }
+
+      /* Maak van een technische fout een begrijpelijke Nederlandse melding. */
+      function explainError(err) {
+        const details = (err && err.details) || {};
+        const status = details.httpStatus || details.code || (err && err.code);
+        const text = [err && err.message, err && err.description, ...(Array.isArray(details.messages) ? details.messages : [])]
+                       .filter(Boolean).join(" ");
+        if ([401, 403, 498, 499].includes(Number(status)) ||
+            /permission|not authori[sz]ed|unauthori[sz]ed|access denied|invalid token|token required|not allowed|no privileges/i.test(text)) {
+          return "Geen schrijfrechten: de API-sleutel mag deze laag niet bewerken. " +
+                 "Vraag de beheerder de rechten van de API-sleutel (item-toegang en bewerken) te controleren." +
+                 (text ? " (Details: " + text + ")" : "");
+        }
+        if (/not supported|operation is not|update.*disabled|editing.*disabled/i.test(text)) {
+          return "Bijwerken is op deze laag niet toegestaan. Controleer of 'Update' aan staat bij de Feature Service." +
+                 (text ? " (Details: " + text + ")" : "");
+        }
+        return "Er ging iets mis: " + (text || String(err));
+      }
+
+      /* Tekst veilig in een SQL-voorwaarde zetten: enkele aanhalingstekens verdubbelen. */
+      function sqlText(value) { return String(value).replace(/'/g, "''"); }
+
+      /* Zoekvoorwaarde: UPPER(veld) LIKE '%TEKST%'  → hoofdletterongevoelig, deel-match.
+         De zoektekst wordt hier al in JavaScript naar HOOFDLETTERS gezet; dat werkt hetzelfde als
+         UPPER('%tekst%') in SQL, maar wordt door meer soorten lagen ondersteund. */
+      function likeClause(field, text) {
+        // Getalvelden eerst naar tekst omzetten, anders werkt LIKE niet.
+        const isText = field.type === "string" || field.type === "guid" || field.type === "global-id";
+        const expr = isText ? `UPPER(${field.name})` : `UPPER(CAST(${field.name} AS VARCHAR(255)))`;
+        let t = String(text).toUpperCase();
+        if (CONFIG.ESCAPE_LIKE_WILDCARDS) {
+          // Tekens \ % en _ krijgen een \ ervoor, zodat ze letterlijk gezocht worden.
+          // (Nog controleren op de echte laag; zie ESCAPE_LIKE_WILDCARDS in CONFIG.)
+          t = t.replace(/[\\%_]/g, (ch) => "\\" + ch);
+          return `${expr} LIKE '%${sqlText(t)}%' ESCAPE '\\'`;
+        }
+        return `${expr} LIKE '%${sqlText(t)}%'`;
+      }
+      function buildSearchWhere(text) {
+        const t = (text || "").trim().slice(0, CONFIG.SEARCH_MAX_LENGTH);
+        if (!t) return "1=1";                                   // leeg = alles tonen
+        let where = likeClause(numberField, t);
+        if (CONFIG.SEARCH_IN_NAME_TOO && nameField) where = `(${where} OR ${likeClause(nameField, t)})`;
+        return where;
+      }
+
+      /* Is de placeholder-instelling ingevuld? */
+      function placeholderConfigured() {
+        if (CONFIG.PLACEHOLDER_MODE === "where") {
+          return !!CONFIG.PLACEHOLDER_WHERE && CONFIG.PLACEHOLDER_WHERE !== "VOORWAARDE_INVULLEN";
+        }
+        const c = CONFIG.PLACEHOLDER_CENTER;
+        return c && typeof c.x === "number" && typeof c.y === "number";
+      }
+
+      /* Voeg het 'zonder locatie'-filter toe aan een query. */
+      function applyPlaceholderFilter(query) {
+        if (CONFIG.PLACEHOLDER_MODE === "where") {
+          query.where = `(${query.where}) AND (${CONFIG.PLACEHOLDER_WHERE})`;
+        } else {
+          const c = CONFIG.PLACEHOLDER_CENTER;
+          query.geometry = new Point({ x: c.x, y: c.y, spatialReference: { wkid: c.wkid } });
+          query.distance = CONFIG.PLACEHOLDER_TOLERANCE_METERS;
+          query.units = "meters";
+          query.spatialRelationship = "intersects";
+        }
+        return query;
+      }
+
+      /* Haal de objectIds op van alle projecten 'zonder locatie' (voor het label in de lijst). */
+      async function refreshPlaceholderIds() {
+        placeholderIds = new Set();
+        if (!placeholderConfigured()) return;
+        try {
+          const q = applyPlaceholderFilter(projectLayer.createQuery());
+          q.where = q.where || "1=1";
+          const ids = await projectLayer.queryObjectIds(q);
+          placeholderIds = new Set(ids || []);
+        } catch (err) {
+          console.error("Projectlocatie: placeholder-query mislukt", err);
+          showMessage("warning", "Projecten zonder locatie niet te bepalen",
+                      "Controleer PLACEHOLDER_CENTER / PLACEHOLDER_WHERE in het CONFIG-blok. " + explainError(err));
+        }
+      }
+
+      /* ── ZOEKEN ── */
+      function scheduleSearch() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(runSearch, CONFIG.SEARCH_DELAY_MS);   // debounce
+      }
+
+      async function runSearch() {
+        if (!projectLayer) return;
+        if (searchAbort) searchAbort.abort();          // vorige (trage) zoekopdracht afbreken
+        searchAbort = new AbortController();
+        const signal = searchAbort.signal;
+
+        const q = projectLayer.createQuery();
+        q.where = buildSearchWhere(ui.search.value);
+        q.outFields = [oidField, numberField.name].concat(nameField ? [nameField.name] : []);
+        q.returnGeometry = false;
+        q.orderByFields = [numberField.name];
+        q.num = CONFIG.MAX_RESULTS;
+        if (ui.onlyPlaceholder.checked) applyPlaceholderFilter(q);
+
+        ui.status.textContent = "Zoeken…";
+        try {
+          const result = await projectLayer.queryFeatures(q, { signal });
+          if (signal.aborted) return;
+          renderResults(result.features, result.exceededTransferLimit);
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+          console.error("Projectlocatie: zoeken mislukt", err);
+          ui.status.textContent = "";
+          showMessage("danger", "Zoeken mislukt", explainError(err));
+        }
+      }
+
+      function renderResults(features, moreAvailable) {
+        ui.results.replaceChildren();
+        for (const f of features) {
+          const oid = f.attributes[oidField];
+          const item = document.createElement("calcite-list-item");
+          item.value = String(oid);
+          item.label = String(f.attributes[numberField.name] ?? "(geen nummer)");
+          item.description = nameField ? String(f.attributes[nameField.name] ?? "") : "";
+          if (selected && selected.attributes[oidField] === oid) item.selected = true;
+          if (placeholderIds.has(oid)) {
+            const chip = document.createElement("calcite-chip");
+            chip.slot = "content-end";
+            chip.scale = "s";
+            chip.kind = "brand";
+            chip.label = "zonder locatie";
+            chip.textContent = "zonder locatie";
+            item.appendChild(chip);
+          }
+          ui.results.appendChild(item);
+        }
+        if (features.length === 0) ui.status.textContent = "Geen projecten gevonden.";
+        else if (moreAvailable || features.length >= CONFIG.MAX_RESULTS)
+          ui.status.textContent = `Eerste ${features.length} resultaten. Typ meer om te verfijnen.`;
+        else ui.status.textContent = `${features.length} project(en) gevonden.`;
+      }
+
+      /* ── SELECTEREN ── */
+      async function selectProject(oid, { zoom = true } = {}) {
+        cancelSketch();
+        hideMessage();
+        const myRequest = ++selectRequest;            // nummer van deze selectie
+        try {
+          const q = projectLayer.createQuery();
+          q.objectIds = [oid];
+          q.outFields = ["*"];
+          q.returnGeometry = true;
+          q.outSpatialReference = view.spatialReference;
+          const { features } = await projectLayer.queryFeatures(q);
+          if (myRequest !== selectRequest) return;     // intussen is een ander project gekozen
+          if (!features.length) { showMessage("warning", "Project niet gevonden", "Het project bestaat niet meer."); return; }
+          selected = features[0];
+
+          // Oplichten op de kaart
+          if (highlightHandle) highlightHandle.remove();
+          if (layerView) highlightHandle = layerView.highlight(oid);
+          if (zoom && selected.geometry) view.goTo(selected.geometry).catch(() => {});
+
+          showDetails();
+        } catch (err) {
+          if (myRequest !== selectRequest) return;
+          console.error("Projectlocatie: selecteren mislukt", err);
+          showMessage("danger", "Project kon niet worden geladen", explainError(err));
+        }
+      }
+
+      function showDetails() {
+        ui.attrTable.replaceChildren();
+        const addRow = (label, value) => {
+          const tr = document.createElement("tr");
+          const td1 = document.createElement("td"); td1.textContent = label;
+          const td2 = document.createElement("td"); td2.textContent = value;
+          tr.append(td1, td2);
+          ui.attrTable.appendChild(tr);
+        };
+        const fmt = (field, v) => {
+          if (v === null || v === undefined || v === "") return "–";
+          if (field.type === "date") return new Date(v).toLocaleDateString("nl-NL");
+          return String(v);
+        };
+        addRow("Projectnummer", fmt(numberField, selected.attributes[numberField.name]));
+        for (const [name, label] of CONFIG.DETAIL_FIELDS) {
+          const f = findField(name);
+          if (f && f.name !== numberField.name) addRow(label, fmt(f, selected.attributes[f.name]));
+        }
+        const oid = selected.attributes[oidField];
+        addRow("Locatie", !placeholderConfigured() ? "onbekend (placeholder niet ingesteld)"
+                         : placeholderIds.has(oid) ? "nog niet ingetekend" : "ingetekend");
+        ui.details.hidden = false;
+        ui.drawSection.hidden = false;
+        updateButtons();
+      }
+
+      /* ── TEKENEN ── */
+      function updateButtons() {
+        const drawing = sketchVM && sketchVM.state === "active";
+        const hasDrawing = !!drawnGraphic;
+        const problem = editingProblem();
+        ui.draw.disabled = !selected || !!problem || saving;
+        // Ongedaan maken / Opnieuw alleen als er echt iets terug te draaien is.
+        ui.undo.disabled = saving || !(sketchVM && sketchVM.canUndo());
+        ui.redo.disabled = saving || !(sketchVM && sketchVM.canRedo());
+        ui.save.disabled = saving || !hasDrawing || !!problem;
+        ui.cancel.disabled = saving || !(drawing || hasDrawing);
+      }
+
+      function startDrawing() {
+        if (!selected) return;
+        const problem = editingProblem();
+        if (problem) { showMessage("danger", "Bewerken niet mogelijk", problem); return; }
+        hideMessage();
+        cancelSketch();
+        sketchVM.create("polygon");      // klikken = punt zetten, dubbelklik = afronden
+        updateButtons();
+      }
+
+      function cancelSketch() {
+        if (sketchVM) sketchVM.cancel();
+        if (sketchLayer) sketchLayer.removeAll();
+        drawnGraphic = null;
+        updateButtons();
+      }
+
+      /* ── OPSLAAN: alleen de nieuwe geometrie, attributen blijven ongewijzigd ── */
+      async function saveGeometry() {
+        if (saving) return;                          // al bezig (bv. dubbelklik op Opslaan)
+        if (!selected || !drawnGraphic) return;
+        const problem = editingProblem();
+        if (problem) { showMessage("danger", "Bewerken niet mogelijk", problem); return; }
+
+        if (sketchVM.state === "active") sketchVM.complete();     // eventuele bewerking afronden
+        let geometry = drawnGraphic.geometry;
+        if (!geometry || !geometry.rings || geometry.rings.length === 0 || geometry.rings[0].length < 4) {
+          showMessage("warning", "Geen geldig vlak", "Teken een vlak met minstens drie punten.");
+          return;
+        }
+
+        const oid = selected.attributes[oidField];
+        const nr = selected.attributes[numberField.name];
+        const zoomTarget = drawnExtent(geometry);    // in het stelsel van de kaart, om straks naartoe te zoomen
+
+        saving = true;                               // vanaf hier: knop uit tot het klaar is
+        ui.save.loading = true;
+        updateButtons();
+        try {
+          if (placeholderConfigured() && !placeholderIds.has(oid)) {
+            const ok = window.confirm(`Project ${nr} heeft al een ingetekende locatie.\nWilt u die vervangen door het nieuwe vlak?`);
+            if (!ok) return;
+          }
+          // Geometrie omzetten naar het coördinatenstelsel van de laag (indien anders dan de kaart).
+          if (geometry.spatialReference && projectLayer.spatialReference &&
+              !geometry.spatialReference.equals(projectLayer.spatialReference)) {
+            if (!projectOperator.isLoaded()) await projectOperator.load();
+            geometry = projectOperator.execute(geometry, projectLayer.spatialReference);
+          }
+
+          // Alleen het objectId + de geometrie meesturen: andere velden worden NIET gewijzigd.
+          const update = new Graphic({ geometry, attributes: { [oidField]: oid } });
+          const result = await projectLayer.applyEdits({ updateFeatures: [update] });
+
+          const r = result && result.updateFeatureResults && result.updateFeatureResults[0];
+          if (!r) throw new Error("De server gaf geen resultaat terug.");
+          if (r.error) throw r.error;                // fout per object (bv. geen rechten)
+
+          // Gelukt: laag verversen, naar het nieuwe vlak zoomen, lijst bijwerken.
+          projectLayer.refresh();
+          cancelSketch();
+          await refreshPlaceholderIds();
+          await selectProject(oid, { zoom: false });   // gegevens bijwerken zonder te zoomen
+          view.goTo(zoomTarget).catch(() => {});       // één keer zoomen naar het nieuwe vlak
+          scheduleSearch();
+          showMessage("success", "Projectgebied opgeslagen", `De locatie van project ${nr} is bijgewerkt.`);
+        } catch (err) {
+          console.error("Projectlocatie: opslaan mislukt", err);
+          showMessage("danger", "Opslaan mislukt", explainError(err));
+        } finally {
+          saving = false;
+          ui.save.loading = false;
+          updateButtons();
+        }
+      }
+      function drawnExtent(geometry) { return geometry.extent ? geometry.extent.clone().expand(1.5) : geometry; }
+
+
+      /* ── OPSTARTEN: wachten op de kaart, laag zoeken en controleren ── */
+      const mapEl = document.querySelector("arcgis-map");
+      await mapEl.viewOnReady();
+      const view = mapEl.view;
+
+      async function findProjectLayer() {
+        // De webkaart laadt soms iets later; probeer het maximaal ~15 seconden.
+        for (let i = 0; i < 30; i++) {
+          const layers = mapEl.map ? mapEl.map.allLayers : null;
+          const layer = layers && layers.find(l =>
+            CONFIG.PROJECT_LAYER_ID ? l.id === CONFIG.PROJECT_LAYER_ID : l.title === CONFIG.PROJECT_LAYER_TITLE);
+          if (layer) return layer;
+          await new Promise(res => setTimeout(res, 500));
+        }
+        return null;
+      }
+
+      try {
+        projectLayer = await findProjectLayer();
+        if (!projectLayer) {
+          const titles = mapEl.map.allLayers.filter(l => l.type === "feature").map(l => `"${l.title}"`).toArray();
+          throw new Error(`Laag ${CONFIG.PROJECT_LAYER_ID ? "met id '" + CONFIG.PROJECT_LAYER_ID + "'" : "'" + CONFIG.PROJECT_LAYER_TITLE + "'"} ` +
+                          `niet gevonden in de webkaart. Pas PROJECT_LAYER_TITLE aan. Beschikbare lagen: ${titles.join(", ") || "geen"}.`);
+        }
+        if (projectLayer.type !== "feature") throw new Error(`De laag '${projectLayer.title}' is geen feature-laag.`);
+        await projectLayer.load();
+        if (projectLayer.geometryType !== "polygon") throw new Error(`De laag '${projectLayer.title}' is geen vlakkenlaag.`);
+
+        oidField = projectLayer.objectIdField;
+        numberField = findField(CONFIG.PROJECT_NUMBER_FIELD);
+        nameField = findField(CONFIG.NAME_FIELD);
+        if (!numberField) {
+          throw new Error(`Veld '${CONFIG.PROJECT_NUMBER_FIELD}' niet gevonden. Vul PROJECT_NUMBER_FIELD in het CONFIG-blok in. ` +
+                          `Beschikbare velden: ${projectLayer.fields.map(f => f.name).join(", ")}.`);
+        }
+        if (!nameField) console.warn(`Projectlocatie: naamveld '${CONFIG.NAME_FIELD}' niet gevonden; namen worden niet getoond.`);
+
+        layerView = await view.whenLayerView(projectLayer);
+
+        // Tijdelijke laag + tekengereedschap (verborgen in de Lagen-lijst)
+        sketchLayer = new GraphicsLayer({ title: "Projectlocatie (tekenen)", listMode: "hide" });
+        mapEl.map.add(sketchLayer);
+        sketchVM = new SketchViewModel({
+          view,
+          layer: sketchLayer,
+          defaultCreateOptions: { mode: "click" },        // klik per punt, dubbelklik om af te ronden
+          defaultUpdateOptions: { tool: "reshape", toggleToolOnClick: false },
+          updateOnGraphicClick: true,
+          polygonSymbol: {
+            type: "simple-fill",
+            color: CONFIG.SKETCH_FILL_COLOR,
+            outline: { color: CONFIG.SKETCH_OUTLINE_COLOR, width: CONFIG.SKETCH_OUTLINE_WIDTH }
+          },
+          snappingOptions: {                               // snappen staat aan
+            enabled: true,
+            selfEnabled: true,
+            featureEnabled: true,
+            featureSources: [{ layer: projectLayer, enabled: true }]
+          },
+          tooltipOptions: { enabled: true }
+        });
+        sketchVM.on("create", (event) => {
+          if (event.state === "complete") {
+            drawnGraphic = event.graphic;
+            sketchVM.update(drawnGraphic, { tool: "reshape" })   // punten nog verslepen mogelijk
+              .catch(() => {});                                   // (niet erg als dit niet lukt)
+          } else if (event.state === "cancel") {
+            drawnGraphic = null;
+          }
+          updateButtons();
+        });
+        sketchVM.on("update", () => updateButtons());
+        sketchVM.on("undo", () => updateButtons());
+        sketchVM.on("redo", () => updateButtons());
+        sketchVM.on("delete", () => {                 // vlak verwijderd (bv. Delete-toets)
+          drawnGraphic = null;
+          updateButtons();
+        });
+
+        /* Paneel verlaten (ander paneel of sluiten): tekenen stoppen en oplichten weghalen.
+           We 'wikkelen' de bestaande togglePanel/closePanel-functies: die doen hun werk
+           zoals altijd, en daarna kijken we of het Projectlocatie-paneel net dicht is gegaan. */
+        const slotEl = document.getElementById("slot-projectlocatie");
+        const panelVisible = () => slotEl.classList.contains("visible");
+        function onPanelChange(wasVisible) {
+          const isVisible = panelVisible();
+          if (wasVisible && !isVisible) {               // paneel verlaten
+            cancelSketch();
+            if (highlightHandle) { highlightHandle.remove(); highlightHandle = null; }
+          } else if (!wasVisible && isVisible && selected && layerView && !highlightHandle) {
+            highlightHandle = layerView.highlight(selected.attributes[oidField]);   // terug: weer oplichten
+          }
+        }
+        for (const fnName of ["togglePanel", "closePanel"]) {
+          const original = window[fnName];
+          if (typeof original !== "function") continue;
+          window[fnName] = function (...args) {
+            const wasVisible = panelVisible();
+            const result = original.apply(this, args);
+            onPanelChange(wasVisible);
+            return result;
+          };
+        }
+
+        // Knoppen en invoervelden koppelen
+        ui.search.addEventListener("calciteInputInput", scheduleSearch);
+        ui.onlyPlaceholder.addEventListener("calciteCheckboxChange", runSearch);
+        ui.results.addEventListener("calciteListChange", () => {
+          const item = ui.results.selectedItems && ui.results.selectedItems[0];
+          if (item) selectProject(Number(item.value));
+        });
+        ui.draw.addEventListener("click", startDrawing);
+        // Na ongedaan maken/opnieuw de knoppen bijwerken (direct en nog eens na afloop,
+        // omdat het tekengereedschap zijn eigen toestand soms net later bijwerkt).
+        const afterUndoRedo = () => { updateButtons(); setTimeout(updateButtons, 0); };
+        ui.undo.addEventListener("click", () => { sketchVM.undo(); afterUndoRedo(); });
+        ui.redo.addEventListener("click", () => { sketchVM.redo(); afterUndoRedo(); });
+        ui.save.addEventListener("click", saveGeometry);
+        ui.cancel.addEventListener("click", cancelSketch);
+
+        ui.search.maxLength = CONFIG.SEARCH_MAX_LENGTH;
+        ui.search.disabled = false;
+        if (placeholderConfigured()) {
+          ui.onlyPlaceholder.disabled = false;
+        } else {
+          ui.onlyPlaceholder.title = "Stel eerst PLACEHOLDER_CENTER of PLACEHOLDER_WHERE in het CONFIG-blok in.";
+        }
+
+        const problem = editingProblem();
+        if (problem) showMessage("warning", "Alleen zoeken mogelijk", problem);
+
+        await refreshPlaceholderIds();
+        await runSearch();
+
+        // Alleen voor testen/foutzoeken in de browserconsole (bevat geen sleutel). Staat uit tenzij DEBUG: true.
+        if (CONFIG.DEBUG) window.__projectlocatie = { CONFIG, get layer() { return projectLayer; }, get sketchVM() { return sketchVM; },
+                                    get placeholderIds() { return placeholderIds; },
+                                                    get highlighted() { return !!highlightHandle; },
+                                                    get drawnGraphic() { return drawnGraphic; } };
+      } catch (err) {
+        console.error("Projectlocatie: opstarten mislukt", err);
+        ui.status.textContent = "";
+        showMessage("danger", "Projectlocatie kon niet starten", err.message || String(err));
+      }
+    </script>
+    <!-- ═══════════ END PROJECTLOCATIE (JS) ═══════════ -->
+
+  </body>
+</html>
